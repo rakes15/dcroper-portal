@@ -1,0 +1,155 @@
+import { useEffect, useState } from 'react';
+import { getSurveys, deleteSurvey } from '../api/surveys';
+import type { Survey } from '../api/surveys';
+
+const STATUS_OPTIONS = ['all', 'draft', 'finalized', 'submitted'];
+
+export default function Surveys() {
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const fetchSurveys = () => {
+    setLoading(true);
+    getSurveys()
+      .then((r) => setSurveys(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(fetchSurveys, []);
+
+  const filtered = surveys.filter((s) => {
+    const matchStatus = statusFilter === 'all' || s.status === statusFilter;
+    const matchSearch =
+      !search ||
+      s.id.includes(search) ||
+      s.project_id.includes(search) ||
+      (s.assigned_to_name || '').toLowerCase().includes(search.toLowerCase());
+    return matchStatus && matchSearch;
+  });
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this survey? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      await deleteSurvey(id);
+      setSurveys((prev) => prev.filter((s) => s.id !== id));
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Delete failed');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Surveys</h1>
+        <p className="page-subtitle">{surveys.length} total surveys</p>
+      </div>
+
+      <div className="table-card">
+        <div className="table-header" style={{ flexWrap: 'wrap', gap: 10 }}>
+          <span className="table-title">All Surveys</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    border: '1px solid #e0f0e6',
+                    background: statusFilter === s ? '#40916c' : '#fff',
+                    color: statusFilter === s ? '#fff' : '#374151',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+            <input
+              className="search-bar"
+              placeholder="Search by ID, project, assignee…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading">Loading surveys…</div>
+        ) : filtered.length === 0 ? (
+          <div className="empty">No surveys match the filters</div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Survey ID</th>
+                <th>Project</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Synced</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.id.slice(0, 12)}…</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.project_id.slice(0, 8)}…</td>
+                  <td>{s.geometry_type}</td>
+                  <td>
+                    {s.synced_at ? (
+                      <span className="badge badge-synced">Synced</span>
+                    ) : s.status === 'finalized' ? (
+                      <span className="badge badge-finalized">Finalized</span>
+                    ) : (
+                      <span className="badge badge-draft">Draft</span>
+                    )}
+                  </td>
+                  <td>{s.assigned_to_name || <span style={{ color: '#9ca3af' }}>Unassigned</span>}</td>
+                  <td>
+                    {s.synced_at ? (
+                      <span style={{ color: '#059669', fontSize: 13 }}>✓ {new Date(s.synced_at).toLocaleDateString()}</span>
+                    ) : (
+                      <span style={{ color: '#9ca3af', fontSize: 13 }}>—</span>
+                    )}
+                  </td>
+                  <td>{new Date(s.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      onClick={() => handleDelete(s.id)}
+                      disabled={deleting === s.id}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#dc2626',
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        padding: '2px 4px',
+                        opacity: deleting === s.id ? 0.5 : 1,
+                      }}
+                      title="Delete survey"
+                    >
+                      🗑
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
