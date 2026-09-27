@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Surveys from './pages/Surveys';
+import SurveyDetail from './pages/SurveyDetail';
 import Users from './pages/Users';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -27,6 +28,7 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="projects" element={<Projects />} />
         <Route path="surveys" element={<Surveys />} />
+        <Route path="surveys/:id" element={<SurveyDetail />} />
         <Route path="users" element={<Users />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

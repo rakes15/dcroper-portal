@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSurveys, deleteSurvey } from '../api/surveys';
 import type { Survey } from '../api/surveys';
 
@@ -10,6 +11,7 @@ export default function Surveys() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchSurveys = () => {
     setLoading(true);
@@ -104,7 +106,7 @@ export default function Surveys() {
             </thead>
             <tbody>
               {filtered.map((s) => (
-                <tr key={s.id}>
+                <tr key={s.id} onClick={() => navigate(`/surveys/${s.id}`)} style={{ cursor: 'pointer' }}>
                   <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.id.slice(0, 12)}…</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.project_id.slice(0, 8)}…</td>
                   <td>{s.geometry_type}</td>
@@ -128,7 +130,7 @@ export default function Surveys() {
                   <td>{new Date(s.created_at).toLocaleDateString()}</td>
                   <td>
                     <button
-                      onClick={() => handleDelete(s.id)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}
                       disabled={deleting === s.id}
                       style={{
                         background: 'none',
