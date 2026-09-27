@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { getSurveys, deleteSurvey } from '../api/surveys';
 import type { Survey } from '../api/surveys';
 
@@ -33,6 +34,32 @@ export default function Surveys() {
     return matchStatus && matchSearch;
   });
 
+  const handleExport = () => {
+    const rows = filtered.map((s) => {
+      let formData: Record<string, unknown> = {};
+      try { formData = JSON.parse(s.form_response_json || '{}'); } catch {}
+      return {
+        'Survey ID': s.id,
+        'Project ID': s.project_id,
+        'User ID': s.user_id,
+        'Status': s.status,
+        'Geometry Type': s.geometry_type,
+        'Assigned To': s.assigned_to_name || '',
+        'Created': new Date(s.created_at).toLocaleString(),
+        'Synced': s.synced_at ? new Date(s.synced_at).toLocaleString() : '',
+        ...Object.fromEntries(
+          Object.entries(formData)
+            .filter(([k]) => !k.startsWith('_'))
+            .map(([k, v]) => [`Field: ${k}`, String(v)])
+        ),
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Surveys');
+    XLSX.writeFile(wb, `dcroper_surveys_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this survey? This cannot be undone.')) return;
     setDeleting(id);
@@ -57,6 +84,16 @@ export default function Surveys() {
         <div className="table-header" style={{ flexWrap: 'wrap', gap: 10 }}>
           <span className="table-title">All Surveys</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleExport}
+              style={{
+                padding: '6px 14px', borderRadius: 8, border: '1px solid #40916c',
+                background: '#fff', color: '#40916c', cursor: 'pointer',
+                fontSize: 12, fontWeight: 600,
+              }}
+            >
+              ↓ Export XLSX
+            </button>
             <div style={{ display: 'flex', gap: 6 }}>
               {STATUS_OPTIONS.map((s) => (
                 <button

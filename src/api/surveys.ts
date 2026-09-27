@@ -30,11 +30,27 @@ export interface SurveyDetail {
   updated_at: string;
 }
 
+export interface SurveyImage {
+  id: string;
+  filename: string;
+  original_name: string;
+  created_at: string;
+}
+
 export const getSurveys = (params?: { project_id?: string; user_id?: string; status?: string }) =>
   apiClient.get<Survey[]>('/surveys', { params });
 
 export const getSurvey = (id: string) =>
   apiClient.get<SurveyDetail>(`/surveys/${id}`);
+
+export const getSurveyImages = (id: string) =>
+  apiClient.get<SurveyImage[]>(`/surveys/${id}/images`);
+
+export const approveSurvey = (id: string) =>
+  apiClient.post(`/surveys/${id}/approve`);
+
+export const rejectSurvey = (id: string, reason?: string) =>
+  apiClient.post(`/surveys/${id}/reject`, { reason });
 
 export const deleteSurvey = (id: string) =>
   apiClient.delete(`/surveys/${id}`);
