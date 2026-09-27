@@ -7,6 +7,7 @@ import Projects from './pages/Projects';
 import Surveys from './pages/Surveys';
 import SurveyDetail from './pages/SurveyDetail';
 import Users from './pages/Users';
+import MapView from './pages/MapView';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuth();
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="surveys" element={<Surveys />} />
         <Route path="surveys/:id" element={<SurveyDetail />} />
         <Route path="users" element={<Users />} />
+        <Route path="map" element={<MapView />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

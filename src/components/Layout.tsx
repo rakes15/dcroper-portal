@@ -6,6 +6,7 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: '🏠' },
   { to: '/projects', label: 'Projects', icon: '📁' },
   { to: '/surveys', label: 'Surveys', icon: '📋' },
+  { to: '/map', label: 'Map', icon: '🗺️' },
   { to: '/users', label: 'Users', icon: '👥' },
 ];
 
