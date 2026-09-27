@@ -54,3 +54,17 @@ export const rejectSurvey = (id: string, reason?: string) =>
 
 export const deleteSurvey = (id: string) =>
   apiClient.delete(`/surveys/${id}`);
+
+export interface SurveyComment {
+  id: string;
+  user_id: string;
+  user_name: string;
+  text: string;
+  created_at: string;
+}
+
+export const getSurveyComments = (id: string) =>
+  apiClient.get<SurveyComment[]>(`/surveys/${id}/comments`);
+
+export const addSurveyComment = (id: string, text: string) =>
+  apiClient.post<SurveyComment>(`/surveys/${id}/comments`, { text });

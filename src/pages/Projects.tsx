@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getProjects, createProject, updateProject, archiveProject } from '../api/projects';
 import type { Project, ProjectInput } from '../api/projects';
 import { getSurveys } from '../api/surveys';
 import type { Survey } from '../api/surveys';
+import { useAuth } from '../context/AuthContext';
 
 const GEOMETRY_TYPES = ['point', 'polygon', 'line'];
 
@@ -13,6 +15,10 @@ const emptyForm = (): ProjectInput => ({
 });
 
 export default function Projects() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const canEdit = user?.role === 'admin' || user?.role === 'supervisor';
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -251,16 +257,18 @@ export default function Projects() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button
-              onClick={openCreate}
-              style={{
-                padding: '7px 16px', borderRadius: 8, border: 'none',
-                background: '#40916c', color: '#fff', cursor: 'pointer',
-                fontSize: 13, fontWeight: 600,
-              }}
-            >
-              + New Project
-            </button>
+            {canEdit && (
+              <button
+                onClick={openCreate}
+                style={{
+                  padding: '7px 16px', borderRadius: 8, border: 'none',
+                  background: '#40916c', color: '#fff', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600,
+                }}
+              >
+                + New Project
+              </button>
+            )}
           </div>
         </div>
 
@@ -303,9 +311,10 @@ export default function Projects() {
                     <td>{new Date(p.created_at).toLocaleDateString()}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => navigate(`/projects/${p.id}/analytics`)} title="View analytics" style={iconBtnStyle}>📊</button>
                         <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
-                        <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>
-                        {p.status === 'active' && (
+                        {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
+                        {isAdmin && p.status === 'active' && (
                           <button onClick={() => handleArchive(p)} title="Archive project" style={{ ...iconBtnStyle, color: '#dc2626' }}>🗄</button>
                         )}
                       </div>

@@ -1,30 +1,54 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSurvey, getSurveyImages, approveSurvey, rejectSurvey } from '../api/surveys';
-import type { SurveyDetail as SurveyDetailData, SurveyImage } from '../api/surveys';
+import { getSurvey, getSurveyImages, getSurveyComments, addSurveyComment, approveSurvey, rejectSurvey } from '../api/surveys';
+import type { SurveyDetail as SurveyDetailData, SurveyImage, SurveyComment } from '../api/surveys';
+import { useAuth } from '../context/AuthContext';
 
 export default function SurveyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [survey, setSurvey] = useState<SurveyDetailData | null>(null);
   const [images, setImages] = useState<SurveyImage[]>([]);
+  const [comments, setComments] = useState<SurveyComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [qcLoading, setQcLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentSending, setCommentSending] = useState(false);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+
+  const canQcAction = user?.role === 'admin' || user?.role === 'supervisor';
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([getSurvey(id), getSurveyImages(id)])
-      .then(([s, img]) => {
+    Promise.all([getSurvey(id), getSurveyImages(id), getSurveyComments(id)])
+      .then(([s, img, c]) => {
         setSurvey(s.data);
         setImages(img.data);
+        setComments(c.data);
       })
       .catch(() => setError('Survey not found'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleAddComment = async () => {
+    if (!id || !commentText.trim()) return;
+    setCommentSending(true);
+    try {
+      const r = await addSurveyComment(id, commentText.trim());
+      setComments((prev) => [...prev, r.data]);
+      setCommentText('');
+      setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Comment failed');
+    } finally {
+      setCommentSending(false);
+    }
+  };
 
   const handleApprove = async () => {
     if (!id || !confirm('Approve this survey?')) return;
@@ -68,7 +92,7 @@ export default function SurveyDetail() {
   const geometry = survey.geometry || {};
   const internalNotes = formResponse['_internal_notes'] as string | undefined;
   const formFields = Object.entries(formResponse).filter(([k]) => !k.startsWith('_'));
-  const canQc = survey.status === 'submitted' || survey.status === 'pending';
+  const canQc = canQcAction && (survey.status === 'submitted' || survey.status === 'pending');
 
   return (
     <div>
@@ -232,6 +256,61 @@ export default function SurveyDetail() {
             <p style={{ fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>{internalNotes}</p>
           </div>
         )}
+      </div>
+
+      {/* Comments */}
+      <div className="table-card" style={{ padding: 20, marginTop: 16 }}>
+        <div style={{ fontWeight: 700, marginBottom: 14, color: '#1a3a2a' }}>
+          💬 Comments ({comments.length})
+        </div>
+
+        {comments.length === 0 && (
+          <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 14 }}>No comments yet.</div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          {comments.map((c) => (
+            <div
+              key={c.id}
+              style={{
+                background: c.user_id === user?.id ? '#f0fdf4' : '#f9fafb',
+                border: `1px solid ${c.user_id === user?.id ? '#bbf7d0' : '#e5e7eb'}`,
+                borderRadius: 10, padding: '10px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontWeight: 600, fontSize: 13, color: '#1a3a2a' }}>{c.user_name}</span>
+                <span style={{ fontSize: 11, color: '#9ca3af' }}>{new Date(c.created_at).toLocaleString()}</span>
+              </div>
+              <div style={{ fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>{c.text}</div>
+            </div>
+          ))}
+          <div ref={commentsEndRef} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment…"
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 8,
+              border: '1px solid #e0f0e6', fontSize: 14,
+            }}
+          />
+          <button
+            onClick={handleAddComment}
+            disabled={commentSending || !commentText.trim()}
+            style={{
+              padding: '8px 16px', background: '#40916c', color: '#fff',
+              border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14,
+              opacity: commentSending || !commentText.trim() ? 0.5 : 1,
+            }}
+          >
+            {commentSending ? '…' : 'Send'}
+          </button>
+        </div>
       </div>
 
       {/* Photo gallery */}
