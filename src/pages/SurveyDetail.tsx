@@ -51,7 +51,7 @@ export default function SurveyDetail() {
   };
 
   const handleApprove = async () => {
-    if (!id || !confirm('Approve this survey?')) return;
+    if (!id) return;
     setQcLoading(true);
     try {
       await approveSurvey(id);

@@ -24,6 +24,7 @@ export default function Projects() {
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
 
+  const [archiveConfirm, setArchiveConfirm] = useState<string | null>(null);
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Project | null>(null);
   const [form, setForm] = useState<ProjectInput>(emptyForm());
@@ -87,7 +88,8 @@ export default function Projects() {
   };
 
   const handleArchive = async (p: Project) => {
-    if (!confirm(`Archive "${p.name}"? It will be hidden from the app.`)) return;
+    if (archiveConfirm !== p.id) { setArchiveConfirm(p.id); return; }
+    setArchiveConfirm(null);
     try {
       await archiveProject(p.id);
       fetchProjects();
@@ -315,7 +317,12 @@ export default function Projects() {
                         <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
                         {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
                         {isAdmin && p.status === 'active' && (
-                          <button onClick={() => handleArchive(p)} title="Archive project" style={{ ...iconBtnStyle, color: '#dc2626' }}>🗄</button>
+                          archiveConfirm === p.id
+                            ? <>
+                                <button onClick={() => handleArchive(p)} title="Confirm archive" style={{ ...iconBtnStyle, color: '#dc2626', fontWeight: 700, fontSize: 12 }}>✓</button>
+                                <button onClick={() => setArchiveConfirm(null)} title="Cancel" style={{ ...iconBtnStyle, fontSize: 12 }}>✗</button>
+                              </>
+                            : <button onClick={() => handleArchive(p)} title="Archive project" style={{ ...iconBtnStyle, color: '#dc2626' }}>🗄</button>
                         )}
                       </div>
                     </td>

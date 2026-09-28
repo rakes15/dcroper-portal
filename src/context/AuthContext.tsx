@@ -21,8 +21,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('dcroper_token'));
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
-      const u = localStorage.getItem('dcroper_user');
-      return u ? JSON.parse(u) : null;
+      const raw = localStorage.getItem('dcroper_user');
+      if (raw && raw !== 'undefined') return JSON.parse(raw);
+      // Fall back: decode role/id from the stored JWT
+      const t = localStorage.getItem('dcroper_token');
+      if (!t) return null;
+      const payload = JSON.parse(atob(t.split('.')[1]));
+      return { id: payload.id, name: '', role: payload.role ?? 'surveyor', mobile: payload.mobile ?? '' };
     } catch {
       return null;
     }

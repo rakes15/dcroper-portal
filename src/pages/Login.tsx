@@ -18,7 +18,8 @@ export default function Login() {
     setError('');
     try {
       const res = await apiLogin(mobile, password);
-      login(res.data.token, res.data.user);
+      const { token, id, name, role, mobile: mob } = res.data;
+      login(token, { id, name, role, mobile: mob });
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Check your credentials.');
