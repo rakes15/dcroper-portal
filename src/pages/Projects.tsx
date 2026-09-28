@@ -314,6 +314,7 @@ export default function Projects() {
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => navigate(`/projects/${p.id}/analytics`)} title="View analytics" style={iconBtnStyle}>📊</button>
+                        <button onClick={() => navigate(`/projects/${p.id}/form`)} title="View / edit form" style={iconBtnStyle}>📋</button>
                         <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
                         {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
                         {isAdmin && p.status === 'active' && (
