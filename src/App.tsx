@@ -15,6 +15,7 @@ import SurveyAnalytics from './pages/SurveyAnalytics';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import ProjectLifecycle from './pages/ProjectLifecycle';
+import SurveyTemplates from './pages/SurveyTemplates';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuth();
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="map" element={<MapView />} />
         <Route path="projects/:id/analytics" element={<ProjectAnalytics />} />
         <Route path="projects/:id/lifecycle" element={<ProjectLifecycle />} />
+        <Route path="projects/:id/templates" element={<SurveyTemplates />} />
         <Route path="projects/:id/form" element={<ProjectForm />} />
         <Route path="projects/:id/form/edit" element={<FormBuilder />} />
         <Route path="analytics" element={<SurveyAnalytics />} />

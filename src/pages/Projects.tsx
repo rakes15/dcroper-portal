@@ -425,6 +425,7 @@ export default function Projects() {
                         <button onClick={() => navigate(`/projects/${p.id}/lifecycle`)} title="Lifecycle & history" style={iconBtnStyle}>🔄</button>
                         <button onClick={() => navigate(`/projects/${p.id}/analytics`)} title="View analytics" style={iconBtnStyle}>📊</button>
                         <button onClick={() => navigate(`/projects/${p.id}/form`)} title="View / edit form" style={iconBtnStyle}>📋</button>
+                        <button onClick={() => navigate(`/projects/${p.id}/templates`)} title="Survey templates" style={iconBtnStyle}>🔖</button>
                         <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
                         {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
                         {canEdit && (TRANSITIONS[p.status as ProjectStatus] || []).length > 0 && (
