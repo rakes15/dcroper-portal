@@ -2,11 +2,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getProjects, createProject, updateProject, archiveProject } from '../api/projects';
-import type { Project, ProjectInput } from '../api/projects';
+import { getProjects, createProject, updateProject, archiveProject, setProjectStatus, STATUS_META, TRANSITIONS } from '../api/projects';
+import type { Project, ProjectInput, ProjectStatus } from '../api/projects';
 import { getSurveys } from '../api/surveys';
 import type { Survey } from '../api/surveys';
 import { useAuth } from '../context/AuthContext';
+
+const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'All' },
+  { value: 'planning', label: 'Planning' },
+  { value: 'active', label: 'Active' },
+  { value: 'on_hold', label: 'On Hold' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'archived', label: 'Archived' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 const GEOMETRY_TYPES = ['point', 'polygon', 'line'];
 
@@ -24,7 +34,11 @@ export default function Projects() {
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState('');
   const [archiveConfirm, setArchiveConfirm] = useState<string | null>(null);
+  const [statusModal, setStatusModal] = useState<{ project: Project; next: ProjectStatus } | null>(null);
+  const [statusNote, setStatusNote] = useState('');
+  const [statusSaving, setStatusSaving] = useState(false);
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Project | null>(null);
   const [form, setForm] = useState<ProjectInput>(emptyForm());
@@ -33,13 +47,18 @@ export default function Projects() {
 
   const fetchProjects = () => {
     setLoading(true);
-    getProjects(showArchived)
+    const params = statusFilter
+      ? { status: statusFilter }
+      : showArchived
+        ? { include_archived: true }
+        : {};
+    getProjects(params)
       .then((r) => setProjects(r.data))
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
-  useEffect(fetchProjects, [showArchived]);
+  useEffect(fetchProjects, [showArchived, statusFilter]);
 
   const filtered = projects.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -95,6 +114,21 @@ export default function Projects() {
       fetchProjects();
     } catch (e: any) {
       alert(e.response?.data?.error || 'Archive failed');
+    }
+  };
+
+  const handleStatusTransition = async () => {
+    if (!statusModal) return;
+    setStatusSaving(true);
+    try {
+      await setProjectStatus(statusModal.project.id, statusModal.next, statusNote || undefined);
+      setStatusModal(null);
+      setStatusNote('');
+      fetchProjects();
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Status change failed');
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -169,7 +203,44 @@ export default function Projects() {
 
   return (
     <div>
-      {/* Modal */}
+      {/* Status transition modal */}
+      {statusModal && (
+        <div
+          onClick={() => setStatusModal(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600 }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ margin: '0 0 4px', fontSize: 16, color: '#1a3a2a' }}>Change Project Status</h2>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>
+              {statusModal.project.name} →{' '}
+              <span style={{ fontWeight: 700, color: STATUS_META[statusModal.next].color }}>
+                {STATUS_META[statusModal.next].label}
+              </span>
+            </p>
+            <label style={labelStyle}>Note (optional)</label>
+            <textarea
+              value={statusNote}
+              onChange={(e) => setStatusNote(e.target.value)}
+              placeholder="Reason for this transition…"
+              rows={2}
+              style={{ ...inputStyle, resize: 'vertical' }}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button onClick={() => setStatusModal(null)} style={cancelBtnStyle}>Cancel</button>
+              <button
+                onClick={handleStatusTransition}
+                disabled={statusSaving}
+                style={{ ...saveBtnStyle, background: STATUS_META[statusModal.next].color }}
+              >
+                {statusSaving ? 'Saving…' : `Move to ${STATUS_META[statusModal.next].label}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/edit modal */}
       {modal && (
         <div
           onClick={() => setModal(null)}
@@ -230,6 +301,24 @@ export default function Projects() {
               </div>
             </div>
 
+            {modal === 'create' && (
+              <>
+                <label style={labelStyle}>Initial Status</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {(['planning', 'active'] as const).map((s) => {
+                    const m = STATUS_META[s];
+                    const isSel = (form.initial_status || 'planning') === s;
+                    return (
+                      <button key={s} type="button" onClick={() => setForm({ ...form, initial_status: s })}
+                        style={{ flex: 1, padding: '8px', borderRadius: 8, border: '2px solid', borderColor: isSel ? m.color : '#e5e7eb', background: isSel ? m.bg : 'transparent', color: isSel ? m.color : '#6b7280', cursor: 'pointer', fontSize: 13, fontWeight: isSel ? 700 : 400 }}>
+                        {m.icon} {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
               <button onClick={() => setModal(null)} style={cancelBtnStyle}>Cancel</button>
               <button onClick={handleSave} disabled={saving} style={saveBtnStyle}>
@@ -249,10 +338,6 @@ export default function Projects() {
         <div className="table-header" style={{ flexWrap: 'wrap', gap: 10 }}>
           <span className="table-title">All Projects</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-              <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-              Show archived
-            </label>
             <input
               className="search-bar"
               placeholder="Search projects…"
@@ -262,16 +347,35 @@ export default function Projects() {
             {canEdit && (
               <button
                 onClick={openCreate}
-                style={{
-                  padding: '7px 16px', borderRadius: 8, border: 'none',
-                  background: '#40916c', color: '#fff', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600,
-                }}
+                style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#40916c', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
               >
                 + New Project
               </button>
             )}
           </div>
+        </div>
+
+        {/* Status filter chips */}
+        <div style={{ padding: '0 1rem 0.75rem', display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+          {STATUS_FILTER_OPTIONS.map((opt) => {
+            const isActive = statusFilter === opt.value;
+            const meta = opt.value ? STATUS_META[opt.value as ProjectStatus] : null;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => { setStatusFilter(opt.value); setShowArchived(!!opt.value); }}
+                style={{
+                  padding: '0.25rem 0.75rem', borderRadius: 20, border: '1.5px solid',
+                  borderColor: isActive ? (meta?.color || '#40916c') : 'var(--border)',
+                  background: isActive ? (meta?.bg || '#d1fae5') : 'transparent',
+                  color: isActive ? (meta?.color || '#059669') : 'var(--text-muted)',
+                  cursor: 'pointer', fontSize: '0.75rem', fontWeight: isActive ? 700 : 400,
+                }}
+              >
+                {meta ? `${meta.icon} ` : ''}{opt.label}
+              </button>
+            );
+          })}
         </div>
 
         {loading ? (
@@ -306,24 +410,39 @@ export default function Projects() {
                     </td>
                     <td>{p.survey_count ?? '—'}</td>
                     <td>
-                      {p.status === 'active'
-                        ? <span className="badge badge-synced">Active</span>
-                        : <span className="badge badge-draft">Archived</span>}
+                      {(() => {
+                        const m = STATUS_META[p.status as ProjectStatus];
+                        return m ? (
+                          <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: m.bg, color: m.color }}>
+                            {m.icon} {m.label}
+                          </span>
+                        ) : <span>{p.status}</span>;
+                      })()}
                     </td>
                     <td>{new Date(p.created_at).toLocaleDateString()}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button onClick={() => navigate(`/projects/${p.id}/lifecycle`)} title="Lifecycle & history" style={iconBtnStyle}>🔄</button>
                         <button onClick={() => navigate(`/projects/${p.id}/analytics`)} title="View analytics" style={iconBtnStyle}>📊</button>
                         <button onClick={() => navigate(`/projects/${p.id}/form`)} title="View / edit form" style={iconBtnStyle}>📋</button>
                         <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
                         {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
-                        {isAdmin && p.status === 'active' && (
-                          archiveConfirm === p.id
-                            ? <>
-                                <button onClick={() => handleArchive(p)} title="Confirm archive" style={{ ...iconBtnStyle, color: '#dc2626', fontWeight: 700, fontSize: 12 }}>✓</button>
-                                <button onClick={() => setArchiveConfirm(null)} title="Cancel" style={{ ...iconBtnStyle, fontSize: 12 }}>✗</button>
-                              </>
-                            : <button onClick={() => handleArchive(p)} title="Archive project" style={{ ...iconBtnStyle, color: '#dc2626' }}>🗄</button>
+                        {canEdit && (TRANSITIONS[p.status as ProjectStatus] || []).length > 0 && (
+                          <div style={{ position: 'relative' }}>
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) setStatusModal({ project: p, next: e.target.value as ProjectStatus });
+                              }}
+                              style={{ fontSize: 11, borderRadius: 6, border: '1px solid #d1d5db', padding: '2px 4px', cursor: 'pointer', background: 'var(--bg)', color: 'var(--text)' }}
+                              title="Change status"
+                            >
+                              <option value="">⟳ Status</option>
+                              {(TRANSITIONS[p.status as ProjectStatus] || []).map((s) => (
+                                <option key={s} value={s}>{STATUS_META[s].icon} {STATUS_META[s].label}</option>
+                              ))}
+                            </select>
+                          </div>
                         )}
                       </div>
                     </td>

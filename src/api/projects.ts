@@ -8,6 +8,8 @@ export interface Project {
   status: string;
   created_at: string;
   updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
   survey_count?: number;
 }
 
@@ -17,11 +19,49 @@ export interface ProjectInput {
   geometry_type?: string;
   accuracy_threshold?: number;
   max_images?: number;
+  initial_status?: string;
 }
 
-export const getProjects = (includeArchived = false) =>
+export interface StatusHistoryEntry {
+  id: string;
+  project_id: string;
+  from_status: string | null;
+  to_status: string;
+  changed_by: string;
+  changed_by_name: string;
+  note: string | null;
+  created_at: string;
+}
+
+export const STATUSES = ['planning', 'active', 'on_hold', 'completed', 'archived', 'cancelled'] as const;
+export type ProjectStatus = typeof STATUSES[number];
+
+export const STATUS_META: Record<ProjectStatus, { label: string; color: string; bg: string; icon: string }> = {
+  planning:  { label: 'Planning',   color: '#4f46e5', bg: '#eef2ff', icon: '📐' },
+  active:    { label: 'Active',     color: '#059669', bg: '#d1fae5', icon: '✅' },
+  on_hold:   { label: 'On Hold',    color: '#d97706', bg: '#fef3c7', icon: '⏸' },
+  completed: { label: 'Completed',  color: '#2563eb', bg: '#dbeafe', icon: '🏁' },
+  archived:  { label: 'Archived',   color: '#6b7280', bg: '#f3f4f6', icon: '🗄' },
+  cancelled: { label: 'Cancelled',  color: '#dc2626', bg: '#fee2e2', icon: '✗' },
+};
+
+export const TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
+  planning:  ['active', 'cancelled'],
+  active:    ['on_hold', 'completed', 'archived', 'cancelled'],
+  on_hold:   ['active', 'cancelled'],
+  completed: ['archived'],
+  archived:  [],
+  cancelled: [],
+};
+
+export const getProjects = (params?: { status?: string; include_archived?: boolean }) =>
   apiClient
-    .get<{ data: Project[] }>('/projects', { params: includeArchived ? { include_archived: 'true' } : {} })
+    .get<{ data: Project[] }>('/projects', {
+      params: {
+        ...(params?.status ? { status: params.status } : {}),
+        ...(params?.include_archived ? { include_archived: 'true' } : {}),
+      },
+    })
     .then((r) => ({ ...r, data: r.data.data }));
 
 export const getProject = (id: string) => apiClient.get<Project>(`/projects/${id}`);
@@ -30,5 +70,11 @@ export const createProject = (data: ProjectInput) => apiClient.post<{ id: string
 
 export const updateProject = (id: string, data: Partial<ProjectInput>) =>
   apiClient.put(`/projects/${id}`, data);
+
+export const setProjectStatus = (id: string, status: string, note?: string) =>
+  apiClient.patch(`/projects/${id}/status`, { status, note });
+
+export const getProjectHistory = (id: string) =>
+  apiClient.get<StatusHistoryEntry[]>(`/projects/${id}/history`);
 
 export const archiveProject = (id: string) => apiClient.delete(`/projects/${id}`);
