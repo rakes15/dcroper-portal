@@ -45,7 +45,7 @@ export default function MapView() {
   const [loading, setLoading] = useState(true);
   const [projectFilter, setProjectFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [mapMode, setMapMode] = useState<MapMode>('osm');
+  const [mapMode, setMapMode] = useState<MapMode>('hybrid');
 
   useEffect(() => {
     Promise.all([getSurveys(), getProjects()])
