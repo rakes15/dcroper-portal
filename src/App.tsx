@@ -12,6 +12,7 @@ import ProjectAnalytics from './pages/ProjectAnalytics';
 import ProjectForm from './pages/ProjectForm';
 import FormBuilder from './pages/FormBuilder';
 import SurveyAnalytics from './pages/SurveyAnalytics';
+import Reports from './pages/Reports';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuth();
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="projects/:id/form" element={<ProjectForm />} />
         <Route path="projects/:id/form/edit" element={<FormBuilder />} />
         <Route path="analytics" element={<SurveyAnalytics />} />
+        <Route path="reports" element={<Reports />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

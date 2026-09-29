@@ -68,3 +68,8 @@ export const getSurveyComments = (id: string) =>
 
 export const addSurveyComment = (id: string, text: string) =>
   apiClient.post<SurveyComment>(`/surveys/${id}/comments`, { text });
+
+export const exportSurveys = (
+  format: 'csv' | 'geojson',
+  params: { project_id?: string; status?: string; from?: string; to?: string },
+) => apiClient.get(`/surveys/export/${format}`, { params, responseType: 'blob' });
