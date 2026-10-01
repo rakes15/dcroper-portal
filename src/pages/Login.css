@@ -35,22 +35,11 @@
   gap: 28px;
 }
 
-.login-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.login-logo-icon {
-  font-size: 36px;
-  line-height: 1;
-}
-
-.login-logo-name {
-  font-size: 26px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 2px;
+.login-logo-img {
+  width: 220px;
+  max-width: 100%;
+  /* white PNG on dark green — drop-shadow to lift it off the panel */
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
 }
 
 .login-tagline {

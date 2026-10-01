@@ -34,10 +34,7 @@ export default function Login() {
       {/* Left panel — brand */}
       <div className="login-panel">
         <div className="login-panel-content">
-          <div className="login-logo">
-            <span className="login-logo-icon">🌾</span>
-            <span className="login-logo-name">dCroPER</span>
-          </div>
+          <img src="/logo.png" alt="dCroPER" className="login-logo-img" />
           <h2 className="login-tagline">Field Survey<br />Management Portal</h2>
           <p className="login-description">
             Manage projects, review field surveys, approve submissions, and track agricultural data — all from one place.
