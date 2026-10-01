@@ -23,7 +23,7 @@ const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
 const GEOMETRY_TYPES = ['point', 'polygon', 'line'];
 
 const emptyForm = (): ProjectInput => ({
-  name: '', description: '', geometry_type: 'point', accuracy_threshold: 10, max_images: 5,
+  name: '', description: '', geometry_type: 'point', accuracy_threshold: 10, max_images: 5, block_mock_location: false,
 });
 
 export default function Projects() {
@@ -89,6 +89,7 @@ export default function Projects() {
       geometry_type: config.geometry_type || 'point',
       accuracy_threshold: config.accuracy_threshold || 10,
       max_images: config.max_images || 5,
+      block_mock_location: config.block_mock_location === true,
     });
     setFormError('');
     setEditing(p);
@@ -420,6 +421,19 @@ export default function Projects() {
                 <input type="number" value={form.max_images} onChange={(e) => setForm({ ...form, max_images: Number(e.target.value) })} style={inputStyle} />
               </div>
             </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', fontSize: 14 }}>
+              <input
+                type="checkbox"
+                checked={form.block_mock_location === true}
+                onChange={(e) => setForm({ ...form, block_mock_location: e.target.checked })}
+                style={{ width: 16, height: 16, accentColor: '#1a3a2a', cursor: 'pointer' }}
+              />
+              <span>
+                <strong>Block mock/fake GPS</strong>
+                <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>Surveyors must use real device GPS to capture location</span>
+              </span>
+            </label>
 
             {modal === 'create' && (
               <>

@@ -19,6 +19,7 @@ export interface ProjectInput {
   geometry_type?: string;
   accuracy_threshold?: number;
   max_images?: number;
+  block_mock_location?: boolean;
   initial_status?: string;
 }
 
