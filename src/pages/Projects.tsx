@@ -275,9 +275,12 @@ export default function Projects() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
                     {assignments.map((a) => (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', borderRadius: 8, padding: '8px 12px', border: '1px solid #bbf7d0' }}>
-                        <div>
-                          <span style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>{a.name}</span>
-                          <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>{a.mobile} · {a.role}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <RoleBadge role={a.role} />
+                          <div>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>{a.name}</span>
+                            <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 6 }}>{a.mobile}</span>
+                          </div>
                         </div>
                         <button onClick={() => handleUnassign(a.id)} title="Remove" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 16, padding: '0 4px' }}>✕</button>
                       </div>
@@ -288,7 +291,9 @@ export default function Projects() {
                 {/* All users not yet assigned */}
                 {(() => {
                   const assignedIds = new Set(assignments.map((a) => a.id));
-                  const unassigned = allUsers.filter((u) => !assignedIds.has(u.id) && u.role !== 'admin');
+                  const unassigned = allUsers
+                    .filter((u) => !assignedIds.has(u.id))
+                    .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
                   if (unassigned.length === 0) return null;
                   return (
                     <>
@@ -298,9 +303,12 @@ export default function Projects() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {unassigned.map((u) => (
                           <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', borderRadius: 8, padding: '8px 12px', border: '1px solid var(--border)' }}>
-                            <div>
-                              <span style={{ fontSize: 14, fontWeight: 500 }}>{u.name}</span>
-                              <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>{u.mobile} · {u.role}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <RoleBadge role={u.role} />
+                              <div>
+                                <span style={{ fontSize: 14, fontWeight: 500 }}>{u.name}</span>
+                                <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 6 }}>{u.mobile}</span>
+                              </div>
                             </div>
                             <button onClick={() => handleAssign(u.id)} style={{ background: '#40916c', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>+ Add</button>
                           </div>
@@ -568,6 +576,27 @@ export default function Projects() {
         )}
       </div>
     </div>
+  );
+}
+
+const ROLE_ORDER = ['admin', 'supervisor', 'qc', 'surveyor'];
+
+const ROLE_META: Record<string, { label: string; color: string; bg: string }> = {
+  admin:      { label: 'Admin',      color: '#7c3aed', bg: '#ede9fe' },
+  supervisor: { label: 'Supervisor', color: '#d97706', bg: '#fef3c7' },
+  qc:         { label: 'QC',         color: '#0891b2', bg: '#e0f2fe' },
+  surveyor:   { label: 'Surveyor',   color: '#059669', bg: '#d1fae5' },
+};
+
+function RoleBadge({ role }: { role: string }) {
+  const m = ROLE_META[role] ?? { label: role, color: '#6b7280', bg: '#f3f4f6' };
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 10,
+      background: m.bg, color: m.color, whiteSpace: 'nowrap', flexShrink: 0,
+    }}>
+      {m.label}
+    </span>
   );
 }
 
