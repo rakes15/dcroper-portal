@@ -7,6 +7,7 @@ import './Login.css';
 export default function Login() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -22,7 +23,7 @@ export default function Login() {
       login(token, { id, name, role, mobile: mob });
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Check your credentials.');
+      setError(err.response?.data?.error || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -30,46 +31,102 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <div className="login-brand">
-          <span className="login-icon">🌾</span>
-          <h1>dCroPER</h1>
-          <p>Agriculture Field Survey Portal</p>
+      {/* Left panel — brand */}
+      <div className="login-panel">
+        <div className="login-panel-content">
+          <div className="login-logo">
+            <span className="login-logo-icon">🌾</span>
+            <span className="login-logo-name">dCroPER</span>
+          </div>
+          <h2 className="login-tagline">Field Survey<br />Management Portal</h2>
+          <p className="login-description">
+            Manage projects, review field surveys, approve submissions, and track agricultural data — all from one place.
+          </p>
+          <ul className="login-features">
+            <li><span className="feat-icon">📍</span>Real-time GPS survey tracking</li>
+            <li><span className="feat-icon">📊</span>Analytics &amp; reporting</li>
+            <li><span className="feat-icon">✅</span>QC approval workflow</li>
+            <li><span className="feat-icon">🗺</span>Interactive map view</li>
+          </ul>
         </div>
+        <div className="login-panel-footer">
+          dCroPER Agriculture Suite
+        </div>
+      </div>
 
-        {error && <div className="error-msg">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="field">
-            <label>Mobile Number</label>
-            <input
-              type="text"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              placeholder="Enter mobile number"
-              required
-              autoFocus
-            />
+      {/* Right panel — form */}
+      <div className="login-form-panel">
+        <div className="login-card">
+          <div className="login-card-header">
+            <h1>Welcome back</h1>
+            <p>Sign in to your admin account</p>
           </div>
-          <div className="field">
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              required
-            />
-          </div>
-          <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
 
-        <p className="login-hint">
-          Connects to backend at <code>localhost:3000</code>
-        </p>
+          {error && (
+            <div className="login-error">
+              <span className="login-error-icon">⚠</span>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="login-field">
+              <label htmlFor="mobile">Mobile Number</label>
+              <div className="login-input-wrap">
+                <span className="login-input-icon">📱</span>
+                <input
+                  id="mobile"
+                  type="text"
+                  inputMode="numeric"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  placeholder="Enter your mobile number"
+                  required
+                  autoFocus
+                  autoComplete="username"
+                />
+              </div>
+            </div>
+
+            <div className="login-field">
+              <label htmlFor="password">Password</label>
+              <div className="login-input-wrap">
+                <span className="login-input-icon">🔒</span>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="login-show-pw"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? (
+                <span className="login-spinner" />
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+
+          <p className="login-hint">
+            Admin &amp; supervisor access only
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
