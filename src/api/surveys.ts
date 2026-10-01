@@ -11,6 +11,8 @@ export interface Survey {
   geometry_type: string;
   assigned_to: string | null;
   assigned_to_name: string | null;
+  due_date: string | null;
+  priority: string;
   created_at: string;
   updated_at: string;
   synced_at: string | null;
@@ -26,6 +28,9 @@ export interface SurveyDetail {
   geometry: Record<string, unknown>;
   geometry_type: string;
   accuracy: number | null;
+  due_date: string | null;
+  priority: string;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
 }

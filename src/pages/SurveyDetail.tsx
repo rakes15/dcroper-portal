@@ -158,6 +158,20 @@ export default function SurveyDetail() {
         )}
       </div>
 
+      {/* Rejection reason banner */}
+      {survey.status === 'rejected' && survey.rejection_reason && (
+        <div style={{
+          background: '#fff5f5', border: '1px solid #fecaca',
+          borderRadius: 10, padding: '12px 16px', marginBottom: 16,
+          display: 'flex', gap: 10, alignItems: 'flex-start',
+        }}>
+          <span style={{ color: '#dc2626', fontSize: 18 }}>✗</span>
+          <div>
+            <div style={{ fontWeight: 600, color: '#b91c1c', marginBottom: 2 }}>Rejection Reason</div>
+            <div style={{ color: '#7f1d1d', fontSize: 14 }}>{survey.rejection_reason}</div>
+          </div>
+        </div>
+      )}
       {/* Reject form inline */}
       {showRejectForm && (
         <div className="table-card" style={{ padding: 16, marginBottom: 16, background: '#fff5f5', border: '1px solid #fecaca' }}>
@@ -212,6 +226,17 @@ export default function SurveyDetail() {
             <FieldRow label="Created">{new Date(survey.created_at).toLocaleString()}</FieldRow>
             {survey.updated_at && <FieldRow label="Updated">{new Date(survey.updated_at).toLocaleString()}</FieldRow>}
             {survey.accuracy != null && <FieldRow label="Accuracy">±{survey.accuracy.toFixed(1)} m</FieldRow>}
+            {survey.priority && survey.priority !== 'normal' && (
+              <FieldRow label="Priority">
+                <span style={{
+                  fontWeight: 600,
+                  color: survey.priority === 'urgent' ? '#dc2626' : survey.priority === 'high' ? '#ea580c' : '#6b7280',
+                }}>{survey.priority.charAt(0).toUpperCase() + survey.priority.slice(1)}</span>
+              </FieldRow>
+            )}
+            {survey.due_date && (
+              <FieldRow label="Due Date">{new Date(survey.due_date).toLocaleDateString()}</FieldRow>
+            )}
           </dl>
         </div>
 

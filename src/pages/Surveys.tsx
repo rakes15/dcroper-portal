@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { getSurveys, deleteSurvey } from '../api/surveys';
 import type { Survey } from '../api/surveys';
 
-const STATUS_OPTIONS = ['all', 'draft', 'finalized', 'submitted'];
+const STATUS_OPTIONS = ['all', 'draft', 'finalized', 'submitted', 'approved', 'rejected'];
 
 export default function Surveys() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
@@ -148,7 +148,11 @@ export default function Surveys() {
                   <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.project_id.slice(0, 8)}…</td>
                   <td>{s.geometry_type}</td>
                   <td>
-                    {s.synced_at ? (
+                    {s.status === 'approved' ? (
+                      <span className="badge badge-synced">Approved</span>
+                    ) : s.status === 'rejected' ? (
+                      <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}>Rejected</span>
+                    ) : s.synced_at ? (
                       <span className="badge badge-synced">Synced</span>
                     ) : s.status === 'finalized' ? (
                       <span className="badge badge-finalized">Finalized</span>
