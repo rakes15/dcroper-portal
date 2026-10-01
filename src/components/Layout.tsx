@@ -30,8 +30,7 @@ export default function Layout() {
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span className="brand-icon">🌾</span>
-          <span className="brand-name">dCroPER</span>
+          <img src="/logo.png" alt="dCroPER" className="sidebar-logo" />
         </div>
 
         <nav className="sidebar-nav">
