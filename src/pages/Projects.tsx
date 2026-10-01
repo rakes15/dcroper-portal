@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getProjects, createProject, updateProject, archiveProject, setProjectStatus, STATUS_META, TRANSITIONS } from '../api/projects';
-import type { Project, ProjectInput, ProjectStatus } from '../api/projects';
+import { getProjects, createProject, updateProject, archiveProject, setProjectStatus, STATUS_META, TRANSITIONS, getProjectAssignments, assignUserToProject, unassignUserFromProject } from '../api/projects';
+import type { Project, ProjectInput, ProjectStatus, ProjectAssignment } from '../api/projects';
 import { getSurveys } from '../api/surveys';
 import type { Survey } from '../api/surveys';
+import { getUsers } from '../api/users';
+import type { User } from '../api/users';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
@@ -44,6 +46,12 @@ export default function Projects() {
   const [form, setForm] = useState<ProjectInput>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Assignment modal state
+  const [assignModal, setAssignModal] = useState<Project | null>(null);
+  const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [assignLoading, setAssignLoading] = useState(false);
 
   const fetchProjects = () => {
     setLoading(true);
@@ -132,6 +140,41 @@ export default function Projects() {
     }
   };
 
+  const openAssignModal = async (p: Project) => {
+    setAssignModal(p);
+    setAssignLoading(true);
+    try {
+      const [aRes, uRes] = await Promise.all([getProjectAssignments(p.id), getUsers()]);
+      setAssignments(aRes.data);
+      setAllUsers(uRes.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const handleAssign = async (userId: string) => {
+    if (!assignModal) return;
+    try {
+      await assignUserToProject(assignModal.id, userId);
+      const res = await getProjectAssignments(assignModal.id);
+      setAssignments(res.data);
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Assign failed');
+    }
+  };
+
+  const handleUnassign = async (userId: string) => {
+    if (!assignModal) return;
+    try {
+      await unassignUserFromProject(assignModal.id, userId);
+      setAssignments((prev) => prev.filter((a) => a.id !== userId));
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Unassign failed');
+    }
+  };
+
   const handleDownloadPdf = async (p: Project) => {
     let surveys: Survey[] = [];
     try {
@@ -203,6 +246,75 @@ export default function Projects() {
 
   return (
     <div>
+      {/* Assign users modal */}
+      {assignModal && (
+        <div
+          onClick={() => setAssignModal(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700 }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 16, color: '#1a3a2a' }}>Assign Users</h2>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{assignModal.name}</p>
+              </div>
+              <button onClick={() => setAssignModal(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6b7280' }}>✕</button>
+            </div>
+
+            {assignLoading ? (
+              <div style={{ color: '#6b7280', fontSize: 14, padding: '16px 0' }}>Loading…</div>
+            ) : (
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {/* Currently assigned */}
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Assigned ({assignments.length})
+                </p>
+                {assignments.length === 0 ? (
+                  <p style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>No users assigned yet</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                    {assignments.map((a) => (
+                      <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', borderRadius: 8, padding: '8px 12px', border: '1px solid #bbf7d0' }}>
+                        <div>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>{a.name}</span>
+                          <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>{a.mobile} · {a.role}</span>
+                        </div>
+                        <button onClick={() => handleUnassign(a.id)} title="Remove" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 16, padding: '0 4px' }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* All users not yet assigned */}
+                {(() => {
+                  const assignedIds = new Set(assignments.map((a) => a.id));
+                  const unassigned = allUsers.filter((u) => !assignedIds.has(u.id) && u.role !== 'admin');
+                  if (unassigned.length === 0) return null;
+                  return (
+                    <>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Add User
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {unassigned.map((u) => (
+                          <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', borderRadius: 8, padding: '8px 12px', border: '1px solid var(--border)' }}>
+                            <div>
+                              <span style={{ fontSize: 14, fontWeight: 500 }}>{u.name}</span>
+                              <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>{u.mobile} · {u.role}</span>
+                            </div>
+                            <button onClick={() => handleAssign(u.id)} style={{ background: '#40916c', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>+ Add</button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Status transition modal */}
       {statusModal && (
         <div
@@ -427,6 +539,7 @@ export default function Projects() {
                         <button onClick={() => navigate(`/projects/${p.id}/form`)} title="View / edit form" style={iconBtnStyle}>📋</button>
                         <button onClick={() => navigate(`/projects/${p.id}/templates`)} title="Survey templates" style={iconBtnStyle}>🔖</button>
                         <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
+                        {isAdmin && <button onClick={() => openAssignModal(p)} title="Assign users" style={iconBtnStyle}>👥</button>}
                         {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
                         {canEdit && (TRANSITIONS[p.status as ProjectStatus] || []).length > 0 && (
                           <div style={{ position: 'relative' }}>

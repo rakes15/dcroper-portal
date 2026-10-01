@@ -78,3 +78,20 @@ export const getProjectHistory = (id: string) =>
   apiClient.get<StatusHistoryEntry[]>(`/projects/${id}/history`);
 
 export const archiveProject = (id: string) => apiClient.delete(`/projects/${id}`);
+
+export interface ProjectAssignment {
+  id: string;
+  name: string;
+  mobile: string;
+  role: string;
+  assigned_at: string;
+}
+
+export const getProjectAssignments = (projectId: string) =>
+  apiClient.get<ProjectAssignment[]>(`/projects/${projectId}/assignments`);
+
+export const assignUserToProject = (projectId: string, userId: string) =>
+  apiClient.post(`/projects/${projectId}/assignments`, { user_id: userId });
+
+export const unassignUserFromProject = (projectId: string, userId: string) =>
+  apiClient.delete(`/projects/${projectId}/assignments/${userId}`);
