@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getProjects, createProject, updateProject, archiveProject, setProjectStatus, STATUS_META, TRANSITIONS, getProjectAssignments, assignUserToProject, unassignUserFromProject } from '../api/projects';
+import { getProjects, createProject, updateProject, setProjectStatus, STATUS_META, TRANSITIONS, getProjectAssignments, assignUserToProject, unassignUserFromProject } from '../api/projects';
 import type { Project, ProjectInput, ProjectStatus, ProjectAssignment } from '../api/projects';
 import { getSurveys } from '../api/surveys';
 import type { Survey } from '../api/surveys';
 import { getUsers } from '../api/users';
 import type { User } from '../api/users';
+import { getAllMasters } from '../api/masters';
+import type { MasterState, MasterDistrict, MasterSeason, MasterCrop } from '../api/masters';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
@@ -24,6 +26,7 @@ const GEOMETRY_TYPES = ['point', 'polygon', 'line'];
 
 const emptyForm = (): ProjectInput => ({
   name: '', description: '', geometry_type: 'point', accuracy_threshold: 10, max_images: 5, block_mock_location: false,
+  state_ids: [], district_ids: [], season_ids: [], crop_ids: [],
 });
 
 export default function Projects() {
@@ -37,7 +40,8 @@ export default function Projects() {
   const [showArchived, setShowArchived] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState('');
-  const [archiveConfirm, setArchiveConfirm] = useState<string | null>(null);
+  const [_archiveConfirm, _setArchiveConfirm] = useState<string | null>(null);
+  void _archiveConfirm; void _setArchiveConfirm;
   const [statusModal, setStatusModal] = useState<{ project: Project; next: ProjectStatus } | null>(null);
   const [statusNote, setStatusNote] = useState('');
   const [statusSaving, setStatusSaving] = useState(false);
@@ -46,6 +50,12 @@ export default function Projects() {
   const [form, setForm] = useState<ProjectInput>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Masters data for dropdowns
+  const [masterStates, setMasterStates] = useState<MasterState[]>([]);
+  const [masterDistricts, setMasterDistricts] = useState<MasterDistrict[]>([]);
+  const [masterSeasons, setMasterSeasons] = useState<MasterSeason[]>([]);
+  const [masterCrops, setMasterCrops] = useState<MasterCrop[]>([]);
 
   // Assignment modal state
   const [assignModal, setAssignModal] = useState<Project | null>(null);
@@ -67,6 +77,15 @@ export default function Projects() {
   };
 
   useEffect(fetchProjects, [showArchived, statusFilter]);
+
+  useEffect(() => {
+    getAllMasters().then((r) => {
+      setMasterStates(r.data.states);
+      setMasterDistricts(r.data.districts);
+      setMasterSeasons(r.data.seasons);
+      setMasterCrops(r.data.crops);
+    }).catch(console.error);
+  }, []);
 
   const filtered = projects.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -90,6 +109,10 @@ export default function Projects() {
       accuracy_threshold: config.accuracy_threshold || 10,
       max_images: config.max_images || 5,
       block_mock_location: config.block_mock_location === true,
+      state_ids: p.state_ids || [],
+      district_ids: p.district_ids || [],
+      season_ids: p.season_ids || [],
+      crop_ids: p.crop_ids || [],
     });
     setFormError('');
     setEditing(p);
@@ -115,16 +138,6 @@ export default function Projects() {
     }
   };
 
-  const handleArchive = async (p: Project) => {
-    if (archiveConfirm !== p.id) { setArchiveConfirm(p.id); return; }
-    setArchiveConfirm(null);
-    try {
-      await archiveProject(p.id);
-      fetchProjects();
-    } catch (e: any) {
-      alert(e.response?.data?.error || 'Archive failed');
-    }
-  };
 
   const handleStatusTransition = async () => {
     if (!statusModal) return;
@@ -435,6 +448,38 @@ export default function Projects() {
               </span>
             </label>
 
+            {/* Masters multi-select */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
+              <MasterMultiSelect
+                label="States"
+                options={masterStates.map((s) => ({ id: s.id, name: s.name }))}
+                selected={form.state_ids || []}
+                onChange={(ids) => setForm({ ...form, state_ids: ids, district_ids: [] })}
+              />
+              <MasterMultiSelect
+                label="Districts"
+                options={masterDistricts
+                  .filter((d) => !(form.state_ids || []).length || (form.state_ids || []).includes(d.state_id))
+                  .map((d) => ({ id: d.id, name: d.name }))}
+                selected={form.district_ids || []}
+                onChange={(ids) => setForm({ ...form, district_ids: ids })}
+                searchable
+              />
+              <MasterMultiSelect
+                label="Seasons"
+                options={masterSeasons.map((s) => ({ id: s.id, name: s.name }))}
+                selected={form.season_ids || []}
+                onChange={(ids) => setForm({ ...form, season_ids: ids })}
+              />
+              <MasterMultiSelect
+                label="Crops"
+                options={masterCrops.map((c) => ({ id: c.id, name: c.name }))}
+                selected={form.crop_ids || []}
+                onChange={(ids) => setForm({ ...form, crop_ids: ids })}
+                searchable
+              />
+            </div>
+
             {modal === 'create' && (
               <>
                 <label style={labelStyle}>Initial Status</label>
@@ -521,7 +566,7 @@ export default function Projects() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Description</th>
+                <th>Masters</th>
                 <th>Geometry</th>
                 <th>Surveys</th>
                 <th>Status</th>
@@ -535,8 +580,19 @@ export default function Projects() {
                 try { config = JSON.parse(p.config_json || '{}'); } catch {}
                 return (
                   <tr key={p.id} style={{ opacity: p.status === 'archived' ? 0.55 : 1 }}>
-                    <td style={{ fontWeight: 600 }}>{p.name}</td>
-                    <td>{p.description || <span style={{ color: '#9ca3af' }}>—</span>}</td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{p.name}</div>
+                      {p.description && <div style={{ fontSize: 12, color: '#6b7280' }}>{p.description}</div>}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {(p.state_names || []).map((n, i) => <span key={i} style={{ background: '#e0f0e6', color: '#1a3a2a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
+                        {(p.district_names || []).map((n, i) => <span key={i} style={{ background: '#dbeafe', color: '#1e3a8a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
+                        {(p.season_names || []).map((n, i) => <span key={i} style={{ background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
+                        {(p.crop_names || []).map((n, i) => <span key={i} style={{ background: '#fce7f3', color: '#9d174d', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
+                        {!(p.state_names?.length) && !(p.district_names?.length) && !(p.season_names?.length) && !(p.crop_names?.length) && <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
+                      </div>
+                    </td>
                     <td>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
                         {config.geometry_type === 'polygon' ? '⬡' : '📍'} {config.geometry_type || '—'}
@@ -632,3 +688,47 @@ const cancelBtnStyle: React.CSSProperties = {
 const iconBtnStyle: React.CSSProperties = {
   background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 4px',
 };
+
+function MasterMultiSelect({
+  label, options, selected, onChange, searchable,
+}: {
+  label: string;
+  options: { id: string; name: string }[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+  searchable?: boolean;
+}) {
+  const [search, setSearch] = React.useState('');
+  const toggle = (id: string) =>
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const visible = searchable
+    ? options.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()))
+    : options;
+  return (
+    <div>
+      <label style={labelStyle}>{label} {selected.length > 0 && <span style={{ color: '#40916c', fontWeight: 700 }}>({selected.length})</span>}</label>
+      {searchable && (
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={`Search ${label.toLowerCase()}…`}
+          style={{ ...inputStyle, marginBottom: 4, padding: '5px 10px', fontSize: 13 }}
+        />
+      )}
+      <div style={{ maxHeight: 120, overflowY: 'auto', border: '1px solid #e0f0e6', borderRadius: 8, padding: '4px 8px' }}>
+        {visible.length === 0 && <div style={{ fontSize: 12, color: '#9ca3af', padding: '4px 0' }}>No options</div>}
+        {visible.map((opt) => (
+          <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', cursor: 'pointer', fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={selected.includes(opt.id)}
+              onChange={() => toggle(opt.id)}
+              style={{ accentColor: '#40916c' }}
+            />
+            {opt.name}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}

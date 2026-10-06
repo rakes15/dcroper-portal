@@ -3,7 +3,9 @@ import { apiClient } from './client';
 // Shape returned by GET /surveys (list)
 export interface Survey {
   id: string;
+  survey_no: number | null;
   project_id: string;
+  project_name?: string | null;
   user_id: string;
   status: string;
   form_response_json: string;
@@ -21,6 +23,7 @@ export interface Survey {
 // Shape returned by GET /surveys/:id (detail — geometry and form_response are pre-parsed)
 export interface SurveyDetail {
   id: string;
+  survey_no: number | null;
   project_id: string;
   user_id: string;
   status: string;

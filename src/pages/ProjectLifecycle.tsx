@@ -4,14 +4,16 @@ import { getProject, getProjectHistory, setProjectStatus, TRANSITIONS, STATUS_ME
 import type { Project, StatusHistoryEntry, ProjectStatus } from '../api/projects';
 import { useAuth } from '../context/AuthContext';
 
-const FLOW: ProjectStatus[][] = [
+const _FLOW: ProjectStatus[][] = [
   ['planning'],
   ['active'],
   ['on_hold', 'completed'],
   ['archived', 'cancelled'],
 ];
+void _FLOW;
 
-const ALL_STATUSES = Object.keys(STATUS_META) as ProjectStatus[];
+const _ALL_STATUSES = Object.keys(STATUS_META) as ProjectStatus[];
+void _ALL_STATUSES;
 
 export default function ProjectLifecycle() {
   const { id } = useParams<{ id: string }>();

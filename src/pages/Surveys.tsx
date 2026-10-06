@@ -30,6 +30,7 @@ export default function Surveys() {
       !search ||
       s.id.includes(search) ||
       s.project_id.includes(search) ||
+      (s.project_name || '').toLowerCase().includes(search.toLowerCase()) ||
       (s.assigned_to_name || '').toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
@@ -39,8 +40,9 @@ export default function Surveys() {
       let formData: Record<string, unknown> = {};
       try { formData = JSON.parse(s.form_response_json || '{}'); } catch {}
       return {
+        'Survey No': s.survey_no ? `#${String(s.survey_no).padStart(3, '0')}` : s.id.slice(0, 8),
         'Survey ID': s.id,
-        'Project ID': s.project_id,
+        'Project': s.project_name || s.project_id,
         'User ID': s.user_id,
         'Status': s.status,
         'Geometry Type': s.geometry_type,
@@ -131,11 +133,10 @@ export default function Surveys() {
           <table>
             <thead>
               <tr>
-                <th>Survey ID</th>
+                <th>#</th>
                 <th>Project</th>
                 <th>Type</th>
                 <th>Status</th>
-                <th>Assigned To</th>
                 <th>Synced</th>
                 <th>Created</th>
                 <th></th>
@@ -144,8 +145,15 @@ export default function Surveys() {
             <tbody>
               {filtered.map((s) => (
                 <tr key={s.id} onClick={() => navigate(`/surveys/${s.id}`)} style={{ cursor: 'pointer' }}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.id.slice(0, 12)}…</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{s.project_id.slice(0, 8)}…</td>
+                  <td>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#1a3a2a', fontSize: 13 }}>
+                      {s.survey_no ? `#${String(s.survey_no).padStart(3, '0')}` : '—'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{s.project_name || '—'}</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#9ca3af' }}>{s.project_id.slice(0, 8)}…</div>
+                  </td>
                   <td>{s.geometry_type}</td>
                   <td>
                     {s.status === 'approved' ? (
@@ -160,7 +168,6 @@ export default function Surveys() {
                       <span className="badge badge-draft">Draft</span>
                     )}
                   </td>
-                  <td>{s.assigned_to_name || <span style={{ color: '#9ca3af' }}>Unassigned</span>}</td>
                   <td>
                     {s.synced_at ? (
                       <span style={{ color: '#059669', fontSize: 13 }}>✓ {new Date(s.synced_at).toLocaleDateString()}</span>

@@ -11,6 +11,14 @@ export interface Project {
   started_at: string | null;
   completed_at: string | null;
   survey_count?: number;
+  state_ids?: string[];
+  state_names?: string[];
+  district_ids?: string[];
+  district_names?: string[];
+  season_ids?: string[];
+  season_names?: string[];
+  crop_ids?: string[];
+  crop_names?: string[];
 }
 
 export interface ProjectInput {
@@ -21,6 +29,10 @@ export interface ProjectInput {
   max_images?: number;
   block_mock_location?: boolean;
   initial_status?: string;
+  state_ids?: string[];
+  district_ids?: string[];
+  season_ids?: string[];
+  crop_ids?: string[];
 }
 
 export interface StatusHistoryEntry {

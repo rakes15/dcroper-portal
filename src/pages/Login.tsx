@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login as apiLogin } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -19,8 +20,8 @@ export default function Login() {
     setError('');
     try {
       const res = await apiLogin(mobile, password);
-      const { token, id, name, role, mobile: mob } = res.data;
-      login(token, { id, name, role, mobile: mob });
+      const { token, user } = res.data;
+      login(token, user);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid credentials. Please try again.');
