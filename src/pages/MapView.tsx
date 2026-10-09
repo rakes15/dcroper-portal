@@ -34,11 +34,22 @@ const TILE_LAYERS = {
 
 type MapMode = 'osm' | 'satellite' | 'hybrid';
 
+const GEO_WMS = 'https://dcroper.com/geoserver/india/wms';
+
+const WMS_LAYERS = {
+  states:    { layers: 'india:gadm41_IND_1', styles: 'india:india_states',    label: 'States',    color: '#1565C0' },
+  districts: { layers: 'india:gadm41_IND_2', styles: 'india:india_districts', label: 'Districts', color: '#2E7D32' },
+  tehsils:   { layers: 'india:gadm41_IND_3', styles: 'india:india_tehsils',   label: 'Tehsils',   color: '#E65100' },
+} as const;
+
+type WmsKey = keyof typeof WMS_LAYERS;
+
 export default function MapView() {
   const navigate = useNavigate();
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRefs = useRef<L.TileLayer[]>([]);
+  const wmsLayerRefs = useRef<Partial<Record<WmsKey, L.TileLayer.WMS>>>({});
   const [mapReady, setMapReady] = useState(false);
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -46,6 +57,9 @@ export default function MapView() {
   const [projectFilter, setProjectFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [mapMode, setMapMode] = useState<MapMode>('hybrid');
+  const [wmsActive, setWmsActive] = useState<Record<WmsKey, boolean>>({
+    states: false, districts: false, tehsils: false,
+  });
 
   useEffect(() => {
     Promise.all([getSurveys(), getProjects()])
@@ -57,7 +71,7 @@ export default function MapView() {
   // Init map (no tile layer here — tile effect handles it)
   useEffect(() => {
     if (loading || !containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, { preferCanvas: true }).setView([20, 78], 5);
+    const map = L.map(containerRef.current).setView([20, 78], 5);
     mapRef.current = map;
     setMapReady(true);
     return () => {
@@ -80,6 +94,35 @@ export default function MapView() {
       tileLayerRefs.current.push(layer);
     });
   }, [mapMode, mapReady]);
+
+  // Sync WMS overlay layers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    (Object.keys(WMS_LAYERS) as WmsKey[]).forEach((key) => {
+      const cfg = WMS_LAYERS[key];
+      if (wmsActive[key]) {
+        if (!wmsLayerRefs.current[key]) {
+          const wms = L.tileLayer.wms(GEO_WMS, {
+            layers: cfg.layers,
+            styles: cfg.styles,
+            format: 'image/png',
+            transparent: true,
+            version: '1.1.1',
+            attribution: '© GeoServer / GADM',
+          });
+          wms.addTo(map);
+          wmsLayerRefs.current[key] = wms;
+        }
+      } else {
+        const existing = wmsLayerRefs.current[key];
+        if (existing) {
+          map.removeLayer(existing);
+          delete wmsLayerRefs.current[key];
+        }
+      }
+    });
+  }, [wmsActive, mapReady]);
 
   // Redraw markers when filters or surveys change
   useEffect(() => {
@@ -111,26 +154,48 @@ export default function MapView() {
           <a href="#" data-id="${s.id}" style="font-size:12px;color:#40916c">View detail →</a>
         </div>`;
 
+      const geoType = (geo.type as string)?.toLowerCase();
+
+      // Normalize coordinates: Flutter stores [{lat,lng},...], GeoJSON uses [[lng,lat],...]
+      const toLatLng = (c: any): L.LatLngTuple | null => {
+        if (Array.isArray(c) && isFinite(c[0]) && isFinite(c[1])) return [c[1], c[0]]; // [lng,lat] → [lat,lng]
+        if (c && isFinite(c.lat) && isFinite(c.lng)) return [c.lat, c.lng];
+        return null;
+      };
+
       let layer: L.Layer | null = null;
-      if (geo.type === 'Point' && Array.isArray(geo.coordinates)) {
-        const [lng, lat] = geo.coordinates as number[];
-        if (isFinite(lat) && isFinite(lng)) {
-          const circle = L.circleMarker([lat, lng], {
+      if (geoType === 'point') {
+        const coords = Array.isArray(geo.coordinates) ? geo.coordinates : [geo.coordinates];
+        const ll = toLatLng(coords[0] ?? geo.coordinates);
+        if (ll) {
+          const circle = L.circleMarker(ll, {
             radius: 8, fillColor: color, fillOpacity: 0.85, color: '#fff', weight: 2,
           }).bindPopup(popup);
           (circle as any)._isSurveyLayer = true;
           circle.addTo(map);
-          bounds.push([lat, lng]);
+          bounds.push(ll);
           layer = circle;
         }
-      } else if (geo.type === 'Polygon' && Array.isArray(geo.coordinates)) {
-        const ring = (geo.coordinates[0] as number[][]).map(([lng, lat]) => [lat, lng] as L.LatLngTuple);
+      } else if (geoType === 'polygon' && Array.isArray(geo.coordinates)) {
+        // GeoJSON: coordinates[0] is the outer ring [[lng,lat],...]; Flutter: coordinates is flat [{lat,lng},...]
+        const rawRing: any[] = Array.isArray(geo.coordinates[0])
+          ? geo.coordinates[0]   // GeoJSON nested ring
+          : geo.coordinates;     // Flutter flat array of {lat,lng} objects
+        const ring = rawRing.map(toLatLng).filter(Boolean) as L.LatLngTuple[];
         if (ring.length > 2) {
           const poly = L.polygon(ring, { color, fillColor: color, fillOpacity: 0.3, weight: 2 }).bindPopup(popup);
           (poly as any)._isSurveyLayer = true;
           poly.addTo(map);
           ring.forEach((ll) => bounds.push(ll));
-          layer = poly;
+          // Centroid circle marker — visible at any zoom level
+          const centLat = ring.reduce((s, ll) => s + ll[0], 0) / ring.length;
+          const centLng = ring.reduce((s, ll) => s + ll[1], 0) / ring.length;
+          const dot = L.circleMarker([centLat, centLng], {
+            radius: 7, fillColor: color, fillOpacity: 0.85, color: '#fff', weight: 2,
+          }).bindPopup(popup);
+          (dot as any)._isSurveyLayer = true;
+          dot.addTo(map);
+          layer = dot;
         }
       }
 
@@ -189,6 +254,34 @@ export default function MapView() {
               {mode === 'osm' ? '🗺️ Map' : mode === 'satellite' ? '🛰️ Satellite' : '🌍 Hybrid'}
             </button>
           ))}
+        </div>
+
+        {/* WMS boundary toggles */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 8, border: '1px solid #e0f0e6', background: '#fff' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', letterSpacing: '0.05em', marginRight: 2 }}>BOUNDS</span>
+          {(Object.keys(WMS_LAYERS) as WmsKey[]).map((key) => {
+            const cfg = WMS_LAYERS[key];
+            const active = wmsActive[key];
+            return (
+              <button key={key} onClick={() => setWmsActive((prev) => ({ ...prev, [key]: !prev[key] }))} style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '3px 9px', borderRadius: 14, fontSize: 12, fontWeight: 600,
+                border: `1.5px solid ${cfg.color}`,
+                cursor: 'pointer',
+                background: active ? cfg.color : '#fff',
+                color: active ? '#fff' : cfg.color,
+                transition: 'all 0.15s',
+              }}>
+                <span style={{
+                  width: 8, height: 8, borderRadius: 2,
+                  border: `2px solid ${active ? '#fff' : cfg.color}`,
+                  background: active ? '#fff' : 'transparent',
+                  display: 'inline-block',
+                }} />
+                {cfg.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
