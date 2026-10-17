@@ -633,15 +633,16 @@ export default function Projects() {
         ) : filtered.length === 0 ? (
           <div className="empty">No projects found</div>
         ) : (
+          <div className="table-overflow">
           <table>
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Masters</th>
-                <th>Geometry</th>
+                <th className="hide-mobile">Masters</th>
+                <th className="hide-mobile">Geometry</th>
                 <th>Surveys</th>
                 <th>Status</th>
-                <th>Created</th>
+                <th className="hide-mobile">Created</th>
                 <th></th>
               </tr>
             </thead>
@@ -655,7 +656,7 @@ export default function Projects() {
                       <div style={{ fontWeight: 600 }}>{p.name}</div>
                       {p.description && <div style={{ fontSize: 12, color: '#6b7280' }}>{p.description}</div>}
                     </td>
-                    <td>
+                    <td className="hide-mobile">
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                         {!!(p.state_names?.length) && <span style={{ background: '#e0f0e6', color: '#1a3a2a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{p.state_names!.length} state{p.state_names!.length !== 1 ? 's' : ''}</span>}
                         {!!(p.district_names?.length) && <span style={{ background: '#dbeafe', color: '#1e3a8a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{p.district_names!.length} district{p.district_names!.length !== 1 ? 's' : ''}</span>}
@@ -664,7 +665,7 @@ export default function Projects() {
                         {!(p.state_names?.length) && !(p.district_names?.length) && !(p.season_names?.length) && !(p.crop_names?.length) && <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-mobile">
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
                         {config.geometry_type === 'polygon' ? '⬡' : '📍'} {config.geometry_type || '—'}
                       </span>
@@ -680,14 +681,14 @@ export default function Projects() {
                         ) : <span>{p.status}</span>;
                       })()}
                     </td>
-                    <td>{new Date(p.created_at).toLocaleDateString()}</td>
+                    <td className="hide-mobile">{new Date(p.created_at).toLocaleDateString()}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button onClick={() => navigate(`/projects/${p.id}/lifecycle`)} title="Lifecycle & history" style={iconBtnStyle}>🔄</button>
+                        <button className="hide-mobile" onClick={() => navigate(`/projects/${p.id}/lifecycle`)} title="Lifecycle & history" style={iconBtnStyle}>🔄</button>
                         <button onClick={() => navigate(`/projects/${p.id}/analytics`)} title="View analytics" style={iconBtnStyle}>📊</button>
                         <button onClick={() => navigate(`/projects/${p.id}/form`)} title="View / edit form" style={iconBtnStyle}>📋</button>
-                        <button onClick={() => navigate(`/projects/${p.id}/templates`)} title="Survey templates" style={iconBtnStyle}>🔖</button>
-                        <button onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
+                        <button className="hide-mobile" onClick={() => navigate(`/projects/${p.id}/templates`)} title="Survey templates" style={iconBtnStyle}>🔖</button>
+                        <button className="hide-mobile" onClick={() => handleDownloadPdf(p)} title="Download PDF report" style={iconBtnStyle}>📄</button>
                         {isAdmin && <button onClick={() => openAssignModal(p)} title="Assign users" style={iconBtnStyle}>👥</button>}
                         {canEdit && <button onClick={() => openEdit(p)} title="Edit project" style={iconBtnStyle}>✏️</button>}
                         {canEdit && (TRANSITIONS[p.status as ProjectStatus] || []).length > 0 && (
@@ -714,6 +715,7 @@ export default function Projects() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
