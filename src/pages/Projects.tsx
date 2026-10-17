@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getProjects, createProject, updateProject, setProjectStatus, STATUS_META, TRANSITIONS, getProjectAssignments, assignUserToProject, unassignUserFromProject } from '../api/projects';
-import type { Project, ProjectInput, ProjectStatus, ProjectAssignment } from '../api/projects';
+import type { Project, ProjectInput, ProjectStatus, ProjectAssignment, WatermarkInput } from '../api/projects';
 import { getSurveys } from '../api/surveys';
 import type { Survey } from '../api/surveys';
 import { getUsers } from '../api/users';
@@ -24,9 +24,15 @@ const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
 
 const GEOMETRY_TYPES = ['point', 'polygon', 'line'];
 
+const emptyWatermark = (): WatermarkInput => ({
+  enabled: false, show_date: true, show_location: true,
+  show_type: true, show_field_name: true, color: '#FFFF00',
+});
+
 const emptyForm = (): ProjectInput => ({
   name: '', description: '', geometry_type: 'point', accuracy_threshold: 10, max_images: 5, block_mock_location: false,
   state_ids: [], district_ids: [], season_ids: [], crop_ids: [],
+  watermark: emptyWatermark(),
 });
 
 export default function Projects() {
@@ -113,6 +119,7 @@ export default function Projects() {
       district_ids: p.district_ids || [],
       season_ids: p.season_ids || [],
       crop_ids: p.crop_ids || [],
+      watermark: config.watermark ? { ...emptyWatermark(), ...config.watermark } : emptyWatermark(),
     });
     setFormError('');
     setEditing(p);
@@ -478,6 +485,69 @@ export default function Projects() {
                 onChange={(ids) => setForm({ ...form, crop_ids: ids })}
                 searchable
               />
+            </div>
+
+            {/* Photo Watermark config */}
+            <div style={{ marginTop: 16, border: '1px solid #e0f0e6', borderRadius: 10, overflow: 'hidden' }}>
+              <div
+                style={{ padding: '10px 14px', background: '#f0faf4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => setForm({ ...form, watermark: { ...(form.watermark ?? emptyWatermark()), enabled: !(form.watermark?.enabled) } })}
+              >
+                <span style={{ fontWeight: 700, fontSize: 13, color: '#1a3a2a' }}>📸 Photo Watermark</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }} onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={form.watermark?.enabled ?? false}
+                    onChange={(e) => setForm({ ...form, watermark: { ...(form.watermark ?? emptyWatermark()), enabled: e.target.checked } })}
+                    style={{ width: 15, height: 15, accentColor: '#40916c', cursor: 'pointer' }}
+                  />
+                  Enable
+                </label>
+              </div>
+              {form.watermark?.enabled && (
+                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    {([
+                      { key: 'show_date',       label: 'Date & Time' },
+                      { key: 'show_location',   label: 'Lat / Long' },
+                      { key: 'show_type',       label: 'Geometry Type' },
+                      { key: 'show_field_name', label: 'Field Name' },
+                    ] as const).map(({ key, label }) => (
+                      <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={(form.watermark as any)?.[key] ?? true}
+                          onChange={(e) => setForm({ ...form, watermark: { ...(form.watermark ?? emptyWatermark()), [key]: e.target.checked } })}
+                          style={{ accentColor: '#40916c', cursor: 'pointer' }}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, color: '#374151' }}>Text color:</span>
+                    {['#FFFF00', '#FFFFFF', '#FF4444', '#00FF00'].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setForm({ ...form, watermark: { ...(form.watermark ?? emptyWatermark()), color: c } })}
+                        title={c}
+                        style={{
+                          width: 24, height: 24, borderRadius: 4, border: form.watermark?.color === c ? '3px solid #1a3a2a' : '2px solid #ccc',
+                          background: c, cursor: 'pointer', padding: 0,
+                        }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={form.watermark?.color ?? '#FFFF00'}
+                      onChange={(e) => setForm({ ...form, watermark: { ...(form.watermark ?? emptyWatermark()), color: e.target.value } })}
+                      style={{ width: 30, height: 24, border: 'none', cursor: 'pointer', background: 'none', padding: 0 }}
+                      title="Custom color"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {modal === 'create' && (

@@ -21,6 +21,15 @@ export interface Project {
   crop_names?: string[];
 }
 
+export interface WatermarkInput {
+  enabled: boolean;
+  show_date: boolean;
+  show_location: boolean;
+  show_type: boolean;
+  show_field_name: boolean;
+  color: string;
+}
+
 export interface ProjectInput {
   name: string;
   description?: string;
@@ -33,6 +42,7 @@ export interface ProjectInput {
   district_ids?: string[];
   season_ids?: string[];
   crop_ids?: string[];
+  watermark?: WatermarkInput;
 }
 
 export interface StatusHistoryEntry {
