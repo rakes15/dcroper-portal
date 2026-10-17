@@ -118,10 +118,10 @@ export default function Settings() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+      <div className="settings-layout">
         {/* Tab sidebar */}
         <div style={{
-          width: 200, flexShrink: 0, background: 'var(--card-bg)',
+          flexShrink: 0, background: 'var(--card-bg)',
           border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden',
         }}>
           {TABS.map((t) => (

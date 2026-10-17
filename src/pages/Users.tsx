@@ -190,9 +190,9 @@ export default function Users() {
       </div>
 
       <div className="table-card">
-        <div className="table-header">
+        <div className="table-header" style={{ flexWrap: 'wrap', gap: 10 }}>
           <span className="table-title">Field Agents & Team</span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
               className="search-bar"
               placeholder="Search users…"
@@ -216,13 +216,14 @@ export default function Users() {
         ) : filtered.length === 0 ? (
           <div className="empty">No users found</div>
         ) : (
+          <div className="table-overflow">
           <table>
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Mobile</th>
+                <th className="hide-mobile">Mobile</th>
                 <th>Role</th>
-                <th>Joined</th>
+                <th className="hide-mobile">Joined</th>
                 {isAdmin && <th></th>}
               </tr>
             </thead>
@@ -250,7 +251,7 @@ export default function Users() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 13 }}>{u.mobile}</td>
+                    <td className="hide-mobile" style={{ fontFamily: 'monospace', fontSize: 13 }}>{u.mobile}</td>
                     <td>
                       <span style={{
                         display: 'inline-block', padding: '3px 10px', borderRadius: 20,
@@ -260,7 +261,7 @@ export default function Users() {
                         {u.role}
                       </span>
                     </td>
-                    <td style={{ fontSize: 12, color: '#9ca3af' }}>
+                    <td className="hide-mobile" style={{ fontSize: 12, color: '#9ca3af' }}>
                       {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
                     </td>
                     {isAdmin && (
@@ -283,6 +284,7 @@ export default function Users() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

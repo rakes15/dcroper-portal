@@ -215,7 +215,7 @@ export default function Masters() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -244,7 +244,7 @@ export default function Masters() {
       {loading ? (
         <div className="loading">Loading masters…</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20, alignItems: 'start' }}>
+        <div className="masters-grid">
 
           {/* ── Add / Edit Form ── */}
           <div className="table-card" style={{ padding: 20 }}>

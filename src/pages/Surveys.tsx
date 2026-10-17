@@ -96,7 +96,7 @@ export default function Surveys() {
             >
               ↓ Export XLSX
             </button>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {STATUS_OPTIONS.map((s) => (
                 <button
                   key={s}
@@ -130,15 +130,16 @@ export default function Surveys() {
         ) : filtered.length === 0 ? (
           <div className="empty">No surveys match the filters</div>
         ) : (
+          <div className="table-overflow">
           <table>
             <thead>
               <tr>
                 <th>#</th>
                 <th>Project</th>
-                <th>Type</th>
+                <th className="hide-mobile">Type</th>
                 <th>Status</th>
-                <th>Synced</th>
-                <th>Created</th>
+                <th className="hide-mobile">Synced</th>
+                <th className="hide-mobile">Created</th>
                 <th></th>
               </tr>
             </thead>
@@ -154,7 +155,7 @@ export default function Surveys() {
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{s.project_name || '—'}</div>
                     <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#9ca3af' }}>{s.project_id.slice(0, 8)}…</div>
                   </td>
-                  <td>{s.geometry_type}</td>
+                  <td className="hide-mobile">{s.geometry_type}</td>
                   <td>
                     {s.status === 'approved' ? (
                       <span className="badge badge-synced">Approved</span>
@@ -168,14 +169,14 @@ export default function Surveys() {
                       <span className="badge badge-draft">Draft</span>
                     )}
                   </td>
-                  <td>
+                  <td className="hide-mobile">
                     {s.synced_at ? (
                       <span style={{ color: '#059669', fontSize: 13 }}>✓ {new Date(s.synced_at).toLocaleDateString()}</span>
                     ) : (
                       <span style={{ color: '#9ca3af', fontSize: 13 }}>—</span>
                     )}
                   </td>
-                  <td>{new Date(s.created_at).toLocaleDateString()}</td>
+                  <td className="hide-mobile">{new Date(s.created_at).toLocaleDateString()}</td>
                   <td>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}
@@ -198,6 +199,7 @@ export default function Surveys() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
