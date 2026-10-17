@@ -387,7 +387,8 @@ export default function Projects() {
           onClick={() => setModal(null)}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500,
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 500,
+            padding: '20px 16px', overflowY: 'auto',
           }}
         >
           <div
@@ -395,6 +396,7 @@ export default function Projects() {
             style={{
               background: '#fff', borderRadius: 12, padding: 28,
               width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+              maxHeight: 'calc(100vh - 40px)', overflowY: 'auto',
             }}
           >
             <h2 style={{ margin: '0 0 20px', fontSize: 18, color: '#1a3a2a' }}>
