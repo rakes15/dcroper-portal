@@ -68,6 +68,8 @@ export default function Projects() {
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [assignLoading, setAssignLoading] = useState(false);
+  // Inline assignment map: projectId -> assigned users
+  const [projectAssignees, setProjectAssignees] = useState<Record<string, ProjectAssignment[]>>({});
 
   const fetchProjects = () => {
     setLoading(true);
@@ -77,7 +79,20 @@ export default function Projects() {
         ? { include_archived: true }
         : {};
     getProjects(params)
-      .then((r) => setProjects(r.data))
+      .then(async (r) => {
+        setProjects(r.data);
+        if (isAdmin) {
+          const entries = await Promise.all(
+            r.data.map(async (p: Project) => {
+              try {
+                const res = await getProjectAssignments(p.id);
+                return [p.id, res.data] as [string, ProjectAssignment[]];
+              } catch { return [p.id, []] as [string, ProjectAssignment[]]; }
+            })
+          );
+          setProjectAssignees(Object.fromEntries(entries));
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
@@ -175,12 +190,17 @@ export default function Projects() {
     }
   };
 
+  const refreshAssignees = async (projectId: string) => {
+    const res = await getProjectAssignments(projectId);
+    setAssignments(res.data);
+    setProjectAssignees((prev) => ({ ...prev, [projectId]: res.data }));
+  };
+
   const handleAssign = async (userId: string) => {
     if (!assignModal) return;
     try {
       await assignUserToProject(assignModal.id, userId);
-      const res = await getProjectAssignments(assignModal.id);
-      setAssignments(res.data);
+      await refreshAssignees(assignModal.id);
     } catch (e: any) {
       alert(e.response?.data?.error || 'Assign failed');
     }
@@ -190,7 +210,7 @@ export default function Projects() {
     if (!assignModal) return;
     try {
       await unassignUserFromProject(assignModal.id, userId);
-      setAssignments((prev) => prev.filter((a) => a.id !== userId));
+      await refreshAssignees(assignModal.id);
     } catch (e: any) {
       alert(e.response?.data?.error || 'Unassign failed');
     }
@@ -642,6 +662,7 @@ export default function Projects() {
                 <th className="hide-mobile">Geometry</th>
                 <th>Surveys</th>
                 <th>Status</th>
+                {isAdmin && <th className="hide-mobile">Assigned</th>}
                 <th className="hide-mobile">Created</th>
                 <th></th>
               </tr>
@@ -681,6 +702,35 @@ export default function Projects() {
                         ) : <span>{p.status}</span>;
                       })()}
                     </td>
+                    {isAdmin && (
+                      <td className="hide-mobile">
+                        {(() => {
+                          const assignees = projectAssignees[p.id] || [];
+                          if (assignees.length === 0) return <span style={{ color: '#9ca3af', fontSize: 12 }}>None</span>;
+                          return (
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                              {assignees.slice(0, 3).map((a) => {
+                                const m = ROLE_META[a.role] ?? { color: '#6b7280', bg: '#f3f4f6' };
+                                return (
+                                  <span key={a.id} title={`${a.name} (${a.role})`} style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    width: 26, height: 26, borderRadius: '50%',
+                                    background: m.bg, color: m.color,
+                                    fontSize: 10, fontWeight: 700, flexShrink: 0, border: '1.5px solid #fff',
+                                    boxShadow: '0 0 0 1px #e5e7eb',
+                                  }}>
+                                    {a.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                                  </span>
+                                );
+                              })}
+                              {assignees.length > 3 && (
+                                <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>+{assignees.length - 3}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                    )}
                     <td className="hide-mobile">{new Date(p.created_at).toLocaleDateString()}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
