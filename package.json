@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && rsync -av --no-perms --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r --delete dist/ root@72.61.235.91:/var/www/dcroper.com/public_html/"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",

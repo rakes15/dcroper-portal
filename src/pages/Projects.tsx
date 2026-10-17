@@ -586,8 +586,8 @@ export default function Projects() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {(p.state_names || []).map((n, i) => <span key={i} style={{ background: '#e0f0e6', color: '#1a3a2a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
-                        {(p.district_names || []).map((n, i) => <span key={i} style={{ background: '#dbeafe', color: '#1e3a8a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
+                        {!!(p.state_names?.length) && <span style={{ background: '#e0f0e6', color: '#1a3a2a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{p.state_names!.length} state{p.state_names!.length !== 1 ? 's' : ''}</span>}
+                        {!!(p.district_names?.length) && <span style={{ background: '#dbeafe', color: '#1e3a8a', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{p.district_names!.length} district{p.district_names!.length !== 1 ? 's' : ''}</span>}
                         {(p.season_names || []).map((n, i) => <span key={i} style={{ background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
                         {(p.crop_names || []).map((n, i) => <span key={i} style={{ background: '#fce7f3', color: '#9d174d', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{n}</span>)}
                         {!(p.state_names?.length) && !(p.district_names?.length) && !(p.season_names?.length) && !(p.crop_names?.length) && <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
