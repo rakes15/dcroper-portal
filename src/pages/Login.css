@@ -277,6 +277,69 @@
 }
 
 /* ── Responsive — stack vertically below 700px ───────────────────── */
+/* ── APK download section ─────────────────────────────────────────── */
+.login-apk-section {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding-top: 20px;
+}
+
+.login-apk-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.login-apk-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.login-qr-wrap {
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.login-apk-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-apk-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.login-apk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.login-apk-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.6);
+}
+
 @media (max-width: 700px) {
   .login-page {
     flex-direction: column;
@@ -292,6 +355,8 @@
   .login-tagline { font-size: 22px; }
 
   .login-features { display: none; }
+
+  .login-apk-section { display: none; }
 
   .login-panel-footer { margin-top: 8px; }
 

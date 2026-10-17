@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import QRCode from 'react-qr-code';
 import { login as apiLogin } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
+
+const APK_URL = 'https://dcroper.com/dcroper.apk';
 
 export default function Login() {
   const [mobile, setMobile] = useState('');
@@ -46,6 +49,24 @@ export default function Login() {
             <li><span className="feat-icon">✅</span>QC approval workflow</li>
             <li><span className="feat-icon">🗺</span>Interactive map view</li>
           </ul>
+
+          <div className="login-apk-section">
+            <p className="login-apk-label">📱 Get the Field App</p>
+            <div className="login-apk-body">
+              <div className="login-qr-wrap">
+                <QRCode value={APK_URL} size={96} bgColor="transparent" fgColor="#ffffff" level="M" />
+              </div>
+              <div className="login-apk-info">
+                <p className="login-apk-hint">Scan to download on Android</p>
+                <a href={APK_URL} download="dcroper.apk" className="login-apk-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 20h14v-2H5v2zm7-18l-7 7h4v6h6v-6h4l-7-7z"/>
+                  </svg>
+                  Download APK
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="login-panel-footer">
           dCroPER Agriculture Suite
