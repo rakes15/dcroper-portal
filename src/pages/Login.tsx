@@ -20,8 +20,8 @@ export default function Login() {
     setError('');
     try {
       const res = await apiLogin(mobile, password);
-      const { token, user } = res.data;
-      login(token, user);
+      const { token, id, name, role, mobile: userMobile } = res.data;
+      login(token, { id, name, role, mobile: userMobile });
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid credentials. Please try again.');

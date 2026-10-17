@@ -2,7 +2,10 @@ import { apiClient } from './client';
 
 export interface LoginResponse {
   token: string;
-  user: { id: string; name: string; role: string; mobile: string };
+  id: string;
+  name: string;
+  role: string;
+  mobile: string;
 }
 
 export const login = (mobile: string, password: string) =>
