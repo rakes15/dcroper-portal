@@ -25,7 +25,12 @@ export default function Surveys() {
   useEffect(fetchSurveys, []);
 
   const filtered = surveys.filter((s) => {
-    const matchStatus = statusFilter === 'all' || s.status === statusFilter;
+    // The app has synced both 'submitted' and the older 'pending' status
+    // value for the same "awaiting QC" state — treat them as one bucket.
+    const matchStatus =
+      statusFilter === 'all' ||
+      s.status === statusFilter ||
+      (statusFilter === 'submitted' && s.status === 'pending');
     const matchSearch =
       !search ||
       s.id.includes(search) ||
@@ -163,6 +168,8 @@ export default function Surveys() {
                       <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}>Rejected</span>
                     ) : s.synced_at ? (
                       <span className="badge badge-synced">Synced</span>
+                    ) : s.status === 'submitted' || s.status === 'pending' ? (
+                      <span className="badge" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>Submitted</span>
                     ) : s.status === 'finalized' ? (
                       <span className="badge badge-finalized">Finalized</span>
                     ) : (
