@@ -31,6 +31,7 @@ const emptyWatermark = (): WatermarkInput => ({
 
 const emptyForm = (): ProjectInput => ({
   name: '', description: '', geometry_type: 'point', accuracy_threshold: 10, max_images: 5, block_mock_location: false,
+  allow_manual_location: false,
   state_ids: [], district_ids: [], season_ids: [], crop_ids: [],
   watermark: emptyWatermark(),
 });
@@ -130,6 +131,7 @@ export default function Projects() {
       accuracy_threshold: config.accuracy_threshold || 10,
       max_images: config.max_images || 5,
       block_mock_location: config.block_mock_location === true,
+      allow_manual_location: config.allow_manual_location === true,
       state_ids: p.state_ids || [],
       district_ids: p.district_ids || [],
       season_ids: p.season_ids || [],
@@ -473,6 +475,19 @@ export default function Projects() {
               <span>
                 <strong>Block mock/fake GPS</strong>
                 <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>Surveyors must use real device GPS to capture location</span>
+              </span>
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', fontSize: 14 }}>
+              <input
+                type="checkbox"
+                checked={form.allow_manual_location === true}
+                onChange={(e) => setForm({ ...form, allow_manual_location: e.target.checked })}
+                style={{ width: 16, height: 16, accentColor: '#1a3a2a', cursor: 'pointer' }}
+              />
+              <span>
+                <strong>Allow manual/custom location</strong>
+                <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>Surveyors may also tap a point on the map or type lat/long instead of only live GPS</span>
               </span>
             </label>
 
