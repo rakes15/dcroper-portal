@@ -352,7 +352,7 @@ export default function SurveyDetail() {
             {images.map((img) => (
               <div
                 key={img.id}
-                onClick={() => setLightbox(`/uploads/${img.filename}`)}
+                onClick={() => setLightbox(img.url)}
                 style={{
                   cursor: 'zoom-in',
                   borderRadius: 8,
@@ -363,7 +363,7 @@ export default function SurveyDetail() {
                 }}
               >
                 <img
-                  src={`/uploads/${img.filename}`}
+                  src={img.url}
                   alt={img.original_name}
                   loading="lazy"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}

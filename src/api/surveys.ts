@@ -43,6 +43,7 @@ export interface SurveyImage {
   filename: string;
   original_name: string;
   created_at: string;
+  url: string;
 }
 
 export const getSurveys = (params?: { project_id?: string; user_id?: string; status?: string }) =>
